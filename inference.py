@@ -41,16 +41,29 @@ def main(args):
     
     model.eval()
 
-    samples, z = model.inference(n=args.num_samples)
-    print('----------SAMPLES----------')
-    print(*idx2word(samples, i2w=i2w, pad_idx=w2i['<pad>']), sep='\n')
+    # samples, z = model.inference(n=args.num_samples)
+    # print('----------SAMPLES----------')
+    # print(*idx2word(samples, i2w=i2w, pad_idx=w2i['<pad>']), sep='\n')
 
-    z1 = torch.randn([args.latent_size]).numpy()
-    z2 = torch.randn([args.latent_size]).numpy()
-    z = to_var(torch.from_numpy(interpolate(start=z1, end=z2, steps=8)).float())
-    samples, _ = model.inference(z=z)
-    print('-------INTERPOLATION-------')
-    print(*idx2word(samples, i2w=i2w, pad_idx=w2i['<pad>']), sep='\n')
+    # z_ = torch.randn([args.latent_size]).numpy()
+    # input_sent = "the n stock specialist firms on the big board floor the buyers and sellers of last resort who were criticized after the n crash once again could n't handle the selling pressure"
+    input_sent = "looking for a job was one of the most anxious periods of my life and is for most people"
+    batch_input = torch.LongTensor(
+        [[w2i[i] for i in input_sent.split()]]).cuda()
+    batch_len = torch.LongTensor([len(input_sent.split())]).cuda()
+    input_mean = model(batch_input, batch_len, output_mean=True)
+    z_ = input_mean.cpu().detach().numpy()
+    print(z_.shape)
+    # z2 = torch.randn([args.latent_size]).numpy()
+    for i in range(args.latent_size):
+        print(f"-------Dimension {i}------")
+        z1, z2 = z_.copy(), z_.copy()
+        z1[i] -= 0.5
+        z2[i] += 0.5
+        z = to_var(torch.from_numpy(interpolate(start=z1, end=z2, steps=5)).float())
+        samples, _ = model.inference(z=z)
+        print('-------INTERPOLATION-------')
+        print(*idx2word(samples, i2w=i2w, pad_idx=w2i['<pad>']), sep='\n')
 
 
 if __name__ == '__main__':
